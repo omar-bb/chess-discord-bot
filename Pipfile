@@ -11,6 +11,9 @@ pylint = "*"
 "discord.py" = "*"
 apscheduler = "*"
 discord-ext-menus = {editable = true, git = "https://github.com/Rapptz/discord-ext-menus"}
+chess = "*"
+mysql-connector-python = "*"
+configparser = "*"
 
 [requires]
 python_version = "3.8"
