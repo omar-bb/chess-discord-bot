@@ -21,17 +21,14 @@ class Meme(commands.Cog):
 
                 embed = discord.Embed(
                     title=data["title"], url=data["postLink"], color=ctx.author.color)
+
                 embed.set_image(url=data["url"])
 
                 await ctx.send(embed=embed)
             else:
                 logging.warning(
                     f"Request failed. Status code: {response.status}")
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        if not self.bot.ready:
-            self.bot.cogs_ready.ready_up("meme")
+                await ctx.send("Subreddit not found! Please enter a valid one.")
 
 
 def setup(bot):

@@ -6,19 +6,15 @@ import math
 from datetime import datetime
 from glob import glob
 from asyncio import sleep
+
 import discord
 from discord.ext import commands
 from discord.ext.commands import Bot as BotBase
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from ..db import Database
+from ..db import db
 
-TOKEN = os.getenv("TOKEN")
-DB_USER = os.getenv("DB_USER")
-DB_PASS = os.getenv("DB_PASS")
-DB_HOST = os.getenv("DB_HOST")
-DB_NAME = os.getenv("DB_NAME")
 
 PREFIX = "!"
 OWNER_ID = [527840431879356416]
@@ -40,15 +36,16 @@ class Ready:
         return all([getattr(self, cog) for cog in COGS])
 
 
-class ChessBot(BotBase):
+class Bot(BotBase):
     def __init__(self):
+        self.TOKEN = os.getenv("TOKEN")
+        self.PREFIX = PREFIX
         self.ready = False
         self.cogs_ready = Ready()
         self.guild = None
         self.scheduler = AsyncIOScheduler()
-        self.db = Database(DB_USER, DB_PASS, DB_HOST, DB_NAME)
-        self.db.autosave(self.scheduler)
 
+        db.autosave(self.scheduler)
         super().__init__(
             command_prefix=PREFIX,
             owner_ids=OWNER_ID,
@@ -66,19 +63,19 @@ class ChessBot(BotBase):
     def run(self, version):
         self.VERSION = version
 
-        logging.info("running setup...")
+        print("running setup...")
         self.setup()
 
-        super().run(TOKEN, reconnect=True)
+        super().run(self.TOKEN, reconnect=True)
 
-    async def process_commands(self, message):
-        ctx = await self.get_context(message, cls=commands.Context)
+    # async def process_commands(self, message):
+    #     ctx = await self.get_context(message, cls=commands.Context)
 
-        if ctx.command is not None and ctx.guild is not None:
-            if self.ready:
-                await self.invoke(ctx)
-            else:
-                await ctx.send("Please wait !, i'm not ready yet to process commands.")
+    #     if ctx.command is not None and ctx.guild is not None:
+    #         if self.ready:
+    #             await self.invoke(ctx)
+    #         else:
+    #             await ctx.send("Please wait !, i'm not ready yet to process commands.")
 
     async def on_connect(self):
         print("bot connected!")
@@ -133,8 +130,9 @@ class ChessBot(BotBase):
             await ctx.send(_message)
             return
 
-        if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.invoke(self.get_command("help"), cmd=f'{ctx.command}')
+        if isinstance(error, commands.UserInputError):
+            await ctx.send("Invalid input.")
+            # await self.send_command_help(ctx)
             return
 
         if isinstance(error, commands.NoPrivateMessage):
@@ -155,19 +153,14 @@ class ChessBot(BotBase):
 
     async def on_ready(self):
         if not self.ready:
-            self.scheduler.start()
-
-            while not self.cogs_ready.all_ready():
-                await sleep(0.5)
-
             self.ready = True
-            logging.info("bot is ready!")
+            print("bot is ready!")
         else:
-            logging.info("bot reconnected")
+            print("bot reconnected")
 
     async def on_message(self, message):
         if not message.author.bot:
             await self.process_commands(message)
 
 
-bot = ChessBot()
+bot = Bot()
